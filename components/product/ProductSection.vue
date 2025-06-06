@@ -17,7 +17,7 @@
       <CartPanel
         v-if="cartStore.totalItemsCount > 0"
         v-model:show="showCartPanel"
-        :items="cartStore.panelDisplayItems"
+        :items="cartStore.rawCartItems"
         @checkout="handleCheckout"
         @clear-cart="cartStore.clearCart"
         @update-item-quantity="handleUpdateItemQuantity"
@@ -48,7 +48,12 @@ const showCartPanel = ref(false);
 
 // 骨架屏加载状态
 const isLoading = computed(() => {
-  return props.loading || !props.menu || !props.menu.categories.length;
+  return (
+    props.loading ||
+    !props.menu ||
+    !props.menu.categories ||
+    !props.menu.categories.length
+  );
 });
 
 const cartInfo = computed(() => ({

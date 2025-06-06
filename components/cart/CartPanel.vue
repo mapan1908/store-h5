@@ -44,10 +44,10 @@
               <div class="inline-flex items-baseline text-orange-500">
                 <span class="text-sm font-medium">¥</span>
                 <span class="text-base font-medium">{{
-                  Math.floor(item.price)
+                  Math.floor(item.price / 100)
                 }}</span>
                 <span class="text-sm font-medium"
-                  >.{{ (item.price % 1).toFixed(2).slice(2) }}</span
+                  >.{{ ((item.price / 100) % 1).toFixed(2).slice(2) }}</span
                 >
               </div>
               <van-stepper
