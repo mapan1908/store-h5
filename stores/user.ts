@@ -46,23 +46,20 @@ export const useUserStore = defineStore(
       error.value = null;
       console.log("✅ 用户信息已更新到pinia store");
 
-      // 调试：检查persist是否自动保存
+      // 验证persist是否工作
       if (process.client) {
-        // 立即检查
-        const immediate = localStorage.getItem("user-info");
-        console.log("📦 立即检查localStorage:", immediate);
-
-        // 延迟检查（等待persist插件保存）
+        // 延迟检查，给persist插件时间保存数据
         setTimeout(() => {
-          const delayed = localStorage.getItem("user-info");
-          console.log("📦 延迟检查localStorage:", delayed);
-
-          if (delayed) {
-            console.log("✅ persist插件自动保存成功");
+          const saved = localStorage.getItem("user-info");
+          if (saved) {
+            console.log(
+              "✅ 用户信息已自动保存到localStorage:",
+              JSON.parse(saved)
+            );
           } else {
-            console.warn("⚠️ persist插件未自动保存，可能需要手动初始化");
+            console.warn("⚠️ 用户信息未保存到localStorage，persist可能未工作");
           }
-        }, 500);
+        }, 200);
       }
     };
 
@@ -112,9 +109,9 @@ export const useUserStore = defineStore(
     persist: {
       key: "user-info",
       storage: typeof window !== "undefined" ? window.localStorage : undefined,
-      // 持久化用户信息
-      pick: ["userInfo"],
-      debug: true,
+      // 持久化用户信息和错误状态
+      pick: ["userInfo", "error"],
+      debug: process.env.NODE_ENV === "development",
     },
   }
 );

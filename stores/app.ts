@@ -104,6 +104,57 @@ export const useAppStore = defineStore(
       console.log("应用状态已重置");
     };
 
+    /**
+     * 开发环境调试：切换认证策略
+     * @param strategy 策略名称: "wechat" | "dev"
+     */
+    const switchAuthStrategy = (strategy: "wechat" | "dev") => {
+      if (process.env.NODE_ENV !== "development") {
+        console.warn("切换认证策略仅在开发环境可用");
+        return;
+      }
+
+      const currentUrl = new URL(window.location.href);
+
+      if (strategy === "wechat") {
+        currentUrl.searchParams.set("forceStrategy", "wechat");
+        console.log("🔄 切换到微信H5认证策略，重新加载页面...");
+      } else {
+        currentUrl.searchParams.delete("forceStrategy");
+        currentUrl.searchParams.delete("force_strategy");
+        console.log("🔄 切换到开发环境认证策略，重新加载页面...");
+      }
+
+      // 重置认证状态
+      reset();
+
+      // 重新加载页面以应用新策略
+      setTimeout(() => {
+        window.location.href = currentUrl.toString();
+      }, 100);
+    };
+
+    /**
+     * 开发环境调试：获取当前认证策略信息
+     */
+    const getAuthDebugInfo = () => {
+      if (process.env.NODE_ENV !== "development") {
+        console.warn("认证调试信息仅在开发环境可用");
+        return null;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        currentStrategy: platform.value,
+        forceStrategy:
+          urlParams.get("forceStrategy") || urlParams.get("force_strategy"),
+        isInitialized: isInitialized.value,
+        userLoggedIn: "请检查userStore.isLoggedIn",
+        url: window.location.href,
+        availableStrategies: ["wechat", "dev"],
+      };
+    };
+
     return {
       // 状态
       isInitialized,
@@ -135,15 +186,19 @@ export const useAppStore = defineStore(
       setGlobalError,
       clearGlobalError,
       reset,
+
+      // 开发环境调试方法
+      switchAuthStrategy,
+      getAuthDebugInfo,
     };
   },
   {
     persist: {
       key: "app-state",
       storage: typeof window !== "undefined" ? window.localStorage : undefined,
-      // 持久化门店上下文、首页配置和初始化状态
-      pick: ["storeContext", "homePage", "isInitialized"],
-      debug: true,
+      // 持久化门店上下文、首页配置、平台信息
+      pick: ["storeContext", "homePage", "platform"],
+      debug: process.env.NODE_ENV === "development",
     },
   }
 );

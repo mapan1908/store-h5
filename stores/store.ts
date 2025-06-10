@@ -39,7 +39,7 @@ export const useStoreInfoStore = defineStore(
 
       try {
         const response = await $fetch<StoreInfoWithConfig>(
-          `/api/store/${targetStoreId}/info`
+          `/api/stores/${targetStoreId}/info`
         );
 
         currentStoreInfo.value = response;
@@ -98,8 +98,10 @@ export const useStoreInfoStore = defineStore(
   {
     persist: {
       key: "store-info",
-      // 只持久化门店编号
-      pick: ["currentStoreId"],
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      // 持久化门店编号和基本信息
+      pick: ["currentStoreId", "currentStoreInfo"],
+      debug: process.env.NODE_ENV === "development",
     },
   }
 );

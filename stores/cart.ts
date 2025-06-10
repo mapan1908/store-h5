@@ -340,7 +340,16 @@ export const useCartStore = defineStore(
 
   {
     persist: {
-      key: "cart-default",
+      key: "cart-data",
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      // 持久化购物车商品数据
+      pick: ["items"],
+      debug: process.env.NODE_ENV === "development",
+      // 自定义序列化，确保数据结构正确
+      serializer: {
+        serialize: JSON.stringify,
+        deserialize: JSON.parse,
+      },
     },
   }
 );

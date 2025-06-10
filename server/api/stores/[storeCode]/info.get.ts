@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
   const res = await apiFetch<StoreInfoWithConfig>(
     event,
-    `/users/store/${storeCode}/info`
+    `/stores/${storeCode}/info`
   );
 
   // 直接返回数据，而不是包装在 { data: ... } 中

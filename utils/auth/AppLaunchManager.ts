@@ -7,6 +7,7 @@ import { StrategyFactory } from "./StrategyFactory";
 import { getPlatformDebugInfo } from "~/utils/platform";
 import type { PlatformStrategy } from "./PlatformStrategy";
 import type { StoreContext } from "~/stores/app";
+import { useRoute } from "vue-router";
 
 export class AppLaunchManager {
   private userStore: any;
@@ -82,14 +83,39 @@ export class AppLaunchManager {
    */
   private parseUrlAndSetStoreContext(): StoreContext | null {
     try {
+      // 优先从路由参数获取 storeCode
+      let storeCode = "";
+
+      // 获取当前路由
+      const route = useRoute();
+
+      // 如果路由中有 storeCode 参数，优先使用（这是主要来源）
+      if (route.params.storeCode) {
+        storeCode = route.params.storeCode as string;
+        console.log("✅ 从路由参数获取门店编号:", storeCode);
+      } else {
+        // 如果路由中没有，则尝试从已保存的状态获取
+        storeCode = this.appStore.getCurrentStoreCode || "";
+        if (storeCode) {
+          console.log("📦 从应用状态获取门店编号:", storeCode);
+        } else {
+          // 最后才尝试从 URL 查询参数获取（向后兼容）
+          const urlParams = new URLSearchParams(window.location.search);
+          storeCode = urlParams.get("storeCode") || "";
+          if (storeCode) {
+            console.log("⚠️ 从 URL 查询参数获取门店编号:", storeCode);
+          }
+        }
+      }
+
+      // 如果仍然没有门店编号，使用默认值
+      if (!storeCode) {
+        storeCode = "TEST001"; // 默认门店编号
+        console.log("🔧 使用默认门店编号:", storeCode);
+      }
+
+      // 获取其他URL参数（tableId和addressId）
       const urlParams = new URLSearchParams(window.location.search);
-
-      // 获取门店信息参数
-      const storeCode =
-        urlParams.get("storeCode") ||
-        this.appStore.getCurrentStoreCode ||
-        "TEST001"; // 默认门店编号
-
       const tableId = urlParams.get("tableId");
       const addressId = urlParams.get("addressId");
 
@@ -102,10 +128,13 @@ export class AppLaunchManager {
       // 更新应用状态中的门店上下文
       this.appStore.setStoreContext(storeContext);
 
-      console.log("门店上下文已建立:", storeContext);
+      console.log("🏪 门店上下文已建立:", storeContext);
+      console.log("📍 当前URL路径:", window.location.pathname);
+      console.log("🔗 当前查询参数:", window.location.search);
+
       return storeContext;
     } catch (error) {
-      console.error("解析门店上下文失败:", error);
+      console.error("❌ 解析门店上下文失败:", error);
       return null;
     }
   }

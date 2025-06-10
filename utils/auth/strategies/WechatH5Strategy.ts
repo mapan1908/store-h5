@@ -14,6 +14,22 @@ export class WechatH5Strategy implements PlatformStrategy {
   }
 
   isPlatform(): boolean {
+    // 检查是否有强制使用微信策略的参数
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const forceWechat =
+        urlParams.get("forceStrategy") === "wechat" ||
+        urlParams.get("force_strategy") === "wechat" ||
+        urlParams.get("forceStrategy") === "wechat_h5" ||
+        urlParams.get("force_strategy") === "wechat_h5";
+
+      if (forceWechat) {
+        console.log("🔧 开发环境强制使用微信H5策略进行测试");
+        return true;
+      }
+    }
+
+    // 正常情况下检查是否在微信浏览器中
     return isWechatBrowser.value;
   }
 
@@ -96,11 +112,11 @@ export class WechatH5Strategy implements PlatformStrategy {
     storeContext: StoreContext
   ): Promise<LoginResult> {
     try {
-      // 构造回调URL (包含门店信息)
+      // 构造回调URL (只包含必要的参数，不包含storeCode，因为storeCode在路径中)
       const currentUrl = window.location.href.split("?")[0];
       const storeParams = new URLSearchParams();
 
-      storeParams.set("storeCode", storeContext.storeCode);
+      // 只传递tableId和addressId，不传递storeCode（storeCode在路径参数中）
       if (storeContext.tableId) {
         storeParams.set("tableId", storeContext.tableId);
       }
@@ -108,8 +124,12 @@ export class WechatH5Strategy implements PlatformStrategy {
         storeParams.set("addressId", storeContext.addressId);
       }
 
-      const finalRedirectUri = `${currentUrl}?${storeParams.toString()}`;
+      const finalRedirectUri = storeParams.toString()
+        ? `${currentUrl}?${storeParams.toString()}`
+        : currentUrl;
+
       console.log("构造的回调URL:", finalRedirectUri);
+      console.log("门店编码从路径获取:", storeContext.storeCode);
 
       // 通过server API获取微信授权URL，避免客户端直接访问后端
       const response = (await $fetch("/api/auth/wechat-auth-url", {
@@ -155,8 +175,8 @@ export class WechatH5Strategy implements PlatformStrategy {
       console.log("清理前的URL:", url.href);
       console.log("当前URL参数:", Array.from(searchParams.entries()));
 
-      // 只保留我们明确需要的参数，清理所有其他参数
-      const keepParams = ["storeCode", "tableId", "addressId", ...paramsToKeep];
+      // 只保留我们明确需要的参数，不保留storeCode（因为门店编码在路径中）
+      const keepParams = ["tableId", "addressId", ...paramsToKeep];
 
       console.log("需要保留的参数:", keepParams);
 
@@ -164,7 +184,7 @@ export class WechatH5Strategy implements PlatformStrategy {
       const allParams = Array.from(searchParams.keys());
       console.log("当前所有参数:", allParams);
 
-      // 清理不在保留列表中的所有参数
+      // 清理不在保留列表中的所有参数（包括storeCode）
       allParams.forEach((param) => {
         if (!keepParams.includes(param)) {
           console.log(`清理参数: ${param} = ${searchParams.get(param)}`);
@@ -196,7 +216,10 @@ export class WechatH5Strategy implements PlatformStrategy {
             console.log("验证：URL搜索参数:", window.location.search);
 
             // 如果URL还是没有更新，尝试强制刷新
-            if (window.location.search.includes("token")) {
+            if (
+              window.location.search.includes("token") ||
+              window.location.search.includes("storeCode")
+            ) {
               console.warn("⚠️ URL参数仍未清理，可能是微信环境限制");
               console.log("当前环境 User Agent:", navigator.userAgent);
             }
